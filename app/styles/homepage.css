@@ -1,0 +1,780 @@
+/* Homepage Dashboard & Create Campaign Styles */
+
+.bd-dashboard {
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  color: #1a1a1a;
+  background-color: #f1f2f4;
+  min-height: 100vh;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.bd-max-width {
+  max-width: 1240px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Top Banner Grid */
+.bd-header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .bd-header-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* App Info Card (Left) */
+.bd-app-card {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.bd-app-header-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.bd-app-icon-bg {
+  width: 48px;
+  height: 48px;
+  background-color: #0d0d0d;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.bd-app-titles h1 {
+  margin: 0 0 6px 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+}
+
+.bd-app-titles p {
+  margin: 0;
+  font-size: 14px;
+  color: #616161;
+  line-height: 1.4;
+}
+
+.bd-app-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.bd-btn-primary {
+  background-color: #0d0d0d;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.15s ease;
+  text-decoration: none;
+}
+
+.bd-btn-primary:hover {
+  background-color: #262626;
+}
+
+.bd-btn-secondary {
+  background-color: #ffffff;
+  color: #1a1a1a;
+  border: 1px solid #c9cccf;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.bd-btn-secondary:hover {
+  background-color: #f6f6f7;
+  border-color: #b5b8ba;
+}
+
+/* Promo Card (Right) */
+.bd-promo-card {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 20px;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 600px) {
+  .bd-promo-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bd-promo-image-container {
+  width: 100%;
+  height: 140px;
+  background-color: #f4fbf7;
+  border: 2px dashed #bbf7d0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.bd-promo-image-container img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.bd-promo-placeholder-badge {
+  background: #dcfce7;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+  text-transform: uppercase;
+}
+
+.bd-promo-details h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bd-promo-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bd-promo-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #4a4a4a;
+}
+
+.bd-promo-link {
+  color: #1a1a1a;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.bd-promo-link:hover {
+  color: #000000;
+}
+
+/* Metric Cards Grid */
+.bd-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .bd-metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 550px) {
+  .bd-metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bd-metric-card {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.bd-metric-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.bd-metric-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bd-metric-icon.green {
+  background-color: #e6f4ea;
+  color: #137333;
+}
+
+.bd-metric-icon.blue {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+}
+
+.bd-metric-icon.yellow {
+  background-color: #fef7e0;
+  color: #b06000;
+}
+
+.bd-metric-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4a4a4a;
+  margin-bottom: 4px;
+}
+
+.bd-metric-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.bd-metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bd-badge-green {
+  background-color: #dcfce7;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.bd-metric-subtext {
+  font-size: 12px;
+  color: #8c9196;
+}
+
+/* Recent Campaigns Card & Table */
+.bd-table-card {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.bd-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.bd-table-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bd-table-wrapper {
+  overflow-x: auto;
+}
+
+.bd-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.bd-table th {
+  font-size: 12px;
+  font-weight: 600;
+  color: #616161;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e1e3e5;
+  text-transform: capitalize;
+}
+
+.bd-table td {
+  padding: 16px;
+  border-bottom: 1px solid #f1f2f4;
+  font-size: 14px;
+  color: #1a1a1a;
+  vertical-align: middle;
+}
+
+.bd-table tr:last-child td {
+  border-bottom: none;
+}
+
+.bd-campaign-name {
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.bd-campaign-sub {
+  font-size: 12px;
+  color: #707070;
+  margin-top: 2px;
+}
+
+.bd-usage-col {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bd-progress-bg {
+  width: 90px;
+  height: 6px;
+  background-color: #e4e4e7;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.bd-progress-fill {
+  height: 100%;
+  background-color: #15803d;
+  border-radius: 3px;
+}
+
+.bd-usage-text {
+  font-size: 13px;
+  color: #4a4a4a;
+  font-weight: 500;
+}
+
+/* Status Pills */
+.bd-status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bd-status-badge.active {
+  background-color: #dcfce7;
+  color: #15803d;
+}
+
+.bd-status-badge.expired {
+  background-color: #f3f4f6;
+  color: #6b7280;
+}
+
+.bd-status-badge.completed {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+
+.bd-action-icon-btn {
+  background: transparent;
+  border: none;
+  color: #616161;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bd-action-icon-btn:hover {
+  background-color: #f1f2f4;
+  color: #1a1a1a;
+}
+
+/* Quick Action Cards Grid (Bottom) */
+.bd-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .bd-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 550px) {
+  .bd-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bd-quick-card {
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.bd-quick-card:hover {
+  border-color: #b5b8ba;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
+.bd-quick-card-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bd-quick-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bd-quick-icon.green {
+  background-color: #e6f4ea;
+  color: #137333;
+}
+
+.bd-quick-icon.blue {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+}
+
+.bd-quick-icon.yellow {
+  background-color: #fef7e0;
+  color: #b06000;
+}
+
+.bd-quick-icon.gray {
+  background-color: #f1f2f4;
+  color: #5f6368;
+}
+
+.bd-quick-card-text h4 {
+  margin: 0 0 2px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.bd-quick-card-text p {
+  margin: 0;
+  font-size: 12px;
+  color: #616161;
+}
+
+.bd-quick-card-arrow {
+  color: #8c9196;
+}
+
+.bd-quick-card:hover .bd-quick-card-arrow {
+  color: #1a1a1a;
+}
+
+/* ============================================================================
+   Create Campaign Page Revamp Styles (2-Column & Sidebar)
+   ============================================================================ */
+
+.bd-create-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .bd-create-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bd-step-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #166534;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bd-section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.bd-section-header h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bd-section-subtitle {
+  margin: 0 0 20px 36px;
+  font-size: 13px;
+  color: #616161;
+}
+
+.bd-input-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+.bd-input-subtext {
+  font-size: 12px;
+  color: #616161;
+  margin-top: 4px;
+}
+
+.bd-input-text {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #c9cccf;
+  font-size: 14px;
+  box-sizing: border-box;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease;
+}
+
+.bd-input-text:focus {
+  outline: none;
+  border-color: #166534;
+}
+
+/* Campaign Summary Sidebar */
+.bd-summary-card {
+  position: sticky;
+  top: 24px;
+  background: #ffffff;
+  border: 1px solid #e1e3e5;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.bd-summary-card h3 {
+  margin: 0 0 18px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bd-summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bd-summary-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.bd-summary-item-icon {
+  color: #616161;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.bd-summary-item-label {
+  font-size: 12px;
+  color: #616161;
+  margin-bottom: 2px;
+}
+
+.bd-summary-item-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.bd-summary-info-box {
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 12px;
+  color: #1d4ed8;
+  line-height: 1.4;
+}
+
+/* Selection Modal & Target Chips */
+.bd-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.bd-modal-container {
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.bd-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid #e1e3e5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.bd-modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.bd-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+}
+
+.bd-modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #e1e3e5;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  background: #f9fafb;
+}
+
+.bd-target-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.bd-chip {
+  background: #f1f2f4;
+  border: 1px solid #e1e3e5;
+  border-radius: 16px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bd-chip-remove {
+  border: none;
+  background: transparent;
+  color: #8c9196;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.bd-chip-remove:hover {
+  color: #dc2626;
+}

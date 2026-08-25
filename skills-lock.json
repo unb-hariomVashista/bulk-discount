@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "shopify-app-store-review": {
+      "source": "Shopify/shopify-ai-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/shopify-app-store-review/SKILL.md",
+      "computedHash": "a09f7be3efafede680f4f3a70bd3d946dbc53de428d397c9383b827aafefbe4c"
+    },
+    "shopify-polaris-app-home": {
+      "source": "Shopify/shopify-ai-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/shopify-polaris-app-home/SKILL.md",
+      "computedHash": "63426b99022877ef2faa68a63d138f23eca41a62c1a7ab0d1bf9e1e726a4bde3"
+    },
+    "shopify-use-shopify-cli": {
+      "source": "Shopify/shopify-ai-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/shopify-use-shopify-cli/SKILL.md",
+      "computedHash": "875b05b0d2895874e3d0405245d684ed4099783c24f9b3a7ba319bc89f608089"
+    }
+  }
+}

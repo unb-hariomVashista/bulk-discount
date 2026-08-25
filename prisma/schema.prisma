@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Note that some adapters may set a maximum length for the String type by default, please ensure your strings are long
+// enough when changing adapters.
+// See https://www.prisma.io/docs/orm/reference/prisma-schema-reference#string for more information
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model StoreSetting {
+  id             String   @id @default(uuid())
+  shop           String   @unique
+  plan           String   @default("PAY_AS_YOU_GO") // PAY_AS_YOU_GO
+  codesLimit     Int      @default(250)    // 250 baseline free codes, + top-ups
+  codesGenerated Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Campaign {
+  id                  String         @id @default(uuid())
+  shop                String
+  title               String
+  description         String?
+  sourceType          String         @default("GENERATE") // GENERATE, IMPORT
+  codePrefix          String?
+  codeLength          Int            @default(8)          // Min 6, Max 12
+  totalCodes          Int
+  usedCodes           Int            @default(0)
+  discountType        String         @default("FIXED_AMOUNT") // FIXED_AMOUNT, PERCENTAGE, FREE_SHIPPING, BUY_X_GET_Y
+  discountValue       Float          // e.g. 15.00 for $15 off
+  appliesTo           String         @default("ALL_PRODUCTS") // ALL_PRODUCTS, SPECIFIC_PRODUCTS, SPECIFIC_COLLECTIONS
+  targetIds           String?        // Comma-separated product/collection GIDs if specific
+  minRequirementType  String         @default("NONE")     // NONE, MIN_AMOUNT, MIN_QUANTITY
+  minRequirementValue Float?         // e.g. $50 min spend or 2 min items
+  startDate           DateTime
+  endDate             DateTime?
+  usageLimitPerCode   Int            @default(1)
+  oncePerCustomer     Boolean        @default(true)
+  appliesOncePerOrder Boolean        @default(true)
+  // Buy X Get Y Specific Fields
+  buysQuantity        Int?           @default(1)
+  buysAppliesTo       String?        // SPECIFIC_PRODUCTS, SPECIFIC_COLLECTIONS
+  buysTargetIds       String?
+  getsQuantity        Int?           @default(1)
+  getsAppliesTo       String?        // SPECIFIC_PRODUCTS, SPECIFIC_COLLECTIONS
+  getsTargetIds       String?
+  getsDiscountType    String?        // FREE, PERCENTAGE
+  getsDiscountValue   Float?         // 100.0 for FREE, or percentage e.g. 50.0
+  maxUsesPerOrder     Int?
+  shopifyDiscountId   String?
+  status              String         @default("ACTIVE")   // ACTIVE, EXPIRED, COMPLETED
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  codes               DiscountCode[]
+}
+
+model DiscountCode {
+  id         String   @id @default(uuid())
+  campaignId String
+  campaign   Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  code       String   @unique
+  usageCount Int      @default(0)
+  maxUses    Int      @default(1)
+  createdAt  DateTime @default(now())
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  shop        String
+  action      String   // CAMPAIGN_CREATED, CODES_EXPORTED, PLAN_UPGRADED, etc.
+  description String
+  details     String?  // JSON metadata
+  createdAt   DateTime @default(now())
+}

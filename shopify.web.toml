@@ -1,0 +1,6 @@
+# Learn more about configuring your web application at https://shopify.dev/docs/apps/tools/cli/configuration#web
+
+roles = ["frontend", "backend"]
+
+[commands]
+dev = "vite"
