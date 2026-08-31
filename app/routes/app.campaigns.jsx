@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useLoaderData, useFetcher, useNavigate } from "react-router";
 import { authenticate } from "../shopify.server";
 import db from "../db.server";
-import { syncCampaignUsage, clearUsageCache } from "../services/discount-sync.server";
+import {
+  syncCampaignUsage,
+  clearUsageCache,
+} from "../services/discount-sync.server";
 import {
   Plus,
   Trash2,
@@ -27,23 +30,29 @@ export const loader = async ({ request }) => {
 
   // Fetch shop currency and campaigns in parallel
   const [shopJsonRes, allCampaigns] = await Promise.all([
-    admin.graphql(
-      `#graphql
+    admin
+      .graphql(
+        `#graphql
       query getShopCurrency {
         shop {
           currencyCode
         }
-      }`
-    ).then(res => res.json()).catch(() => null),
-    db.campaign ? db.campaign.findMany({
-      where: { shop },
-      orderBy: { createdAt: "desc" },
-      include: {
-        codes: {
-          take: 1000,
-        },
-      },
-    }) : Promise.resolve([]),
+      }`,
+      )
+      .then((res) => res.json())
+      .catch(() => null),
+    db.campaign
+      ? db.campaign.findMany({
+          where: { shop },
+          orderBy: { createdAt: "desc" },
+          include: {
+            _count: { select: { codes: true } },
+            codes: {
+              take: 1000,
+            },
+          },
+        })
+      : Promise.resolve([]),
   ]);
 
   const currencyCode = shopJsonRes?.data?.shop?.currencyCode || "USD";
@@ -97,7 +106,7 @@ export const action = async ({ request }) => {
                   id
                 }
               }`,
-              { variables: { code: discountCodes[0].code } }
+              { variables: { code: discountCodes[0].code } },
             );
             const lookupJson = await lookupRes.json();
             discountId = lookupJson.data?.codeDiscountNodeByCode?.id;
@@ -122,7 +131,7 @@ export const action = async ({ request }) => {
                     }
                   }
                 }`,
-                { variables: { id: discountId } }
+                { variables: { id: discountId } },
               );
             } else {
               // Delete each code from Shopify
@@ -146,15 +155,21 @@ export const action = async ({ request }) => {
                         discountId,
                         search: dc.code,
                       },
-                    }
+                    },
                   );
                 } catch (cErr) {
-                  console.warn(`Failed to delete code ${dc.code} from Shopify:`, cErr?.message || cErr);
+                  console.warn(
+                    `Failed to delete code ${dc.code} from Shopify:`,
+                    cErr?.message || cErr,
+                  );
                 }
               }
             }
           } catch (shopErr) {
-            console.error("Shopify GraphQL batch deletion error:", shopErr?.message || shopErr);
+            console.error(
+              "Shopify GraphQL batch deletion error:",
+              shopErr?.message || shopErr,
+            );
           }
         }
 
@@ -165,17 +180,25 @@ export const action = async ({ request }) => {
 
         // Refund quota to store
         try {
-          const storeSetting = await db.storeSetting.findUnique({ where: { shop } });
+          const storeSetting = await db.storeSetting.findUnique({
+            where: { shop },
+          });
           if (storeSetting && storeSetting.codesGenerated > 0) {
             await db.storeSetting.update({
               where: { shop },
               data: {
-                codesGenerated: Math.max(0, storeSetting.codesGenerated - idsArray.length),
+                codesGenerated: Math.max(
+                  0,
+                  storeSetting.codesGenerated - idsArray.length,
+                ),
               },
             });
           }
         } catch (sErr) {
-          console.error("Failed to decrement store quota:", sErr?.message || sErr);
+          console.error(
+            "Failed to decrement store quota:",
+            sErr?.message || sErr,
+          );
         }
 
         await db.activityLog.create({
@@ -186,7 +209,10 @@ export const action = async ({ request }) => {
           },
         });
 
-        return { success: true, message: `Successfully deleted ${idsArray.length} discount codes.` };
+        return {
+          success: true,
+          message: `Successfully deleted ${idsArray.length} discount codes.`,
+        };
       }
     } catch (err) {
       console.error("Batch code deletion error:", err?.message || err);
@@ -215,12 +241,15 @@ export const action = async ({ request }) => {
                   id
                 }
               }`,
-              { variables: { code: discountCode.code } }
+              { variables: { code: discountCode.code } },
             );
             const lookupJson = await lookupRes.json();
             discountId = lookupJson.data?.codeDiscountNodeByCode?.id;
           } catch (lErr) {
-            console.warn("Lookup discount node by code note:", lErr?.message || lErr);
+            console.warn(
+              "Lookup discount node by code note:",
+              lErr?.message || lErr,
+            );
           }
         }
 
@@ -239,7 +268,7 @@ export const action = async ({ request }) => {
                     }
                   }
                 }`,
-                { variables: { id: discountId } }
+                { variables: { id: discountId } },
               );
             } else {
               const delRes = await admin.graphql(
@@ -260,13 +289,19 @@ export const action = async ({ request }) => {
                     discountId,
                     search: discountCode.code,
                   },
-                }
+                },
               );
               const delJson = await delRes.json();
-              console.log("Shopify redeem code bulk delete result:", JSON.stringify(delJson, null, 2));
+              console.log(
+                "Shopify redeem code bulk delete result:",
+                JSON.stringify(delJson, null, 2),
+              );
             }
           } catch (shopErr) {
-            console.error("Shopify GraphQL single code deletion error:", shopErr?.message || shopErr);
+            console.error(
+              "Shopify GraphQL single code deletion error:",
+              shopErr?.message || shopErr,
+            );
           }
         }
 
@@ -277,7 +312,9 @@ export const action = async ({ request }) => {
 
         // Refund quota to store
         try {
-          const storeSetting = await db.storeSetting.findUnique({ where: { shop } });
+          const storeSetting = await db.storeSetting.findUnique({
+            where: { shop },
+          });
           if (storeSetting && storeSetting.codesGenerated > 0) {
             await db.storeSetting.update({
               where: { shop },
@@ -287,7 +324,10 @@ export const action = async ({ request }) => {
             });
           }
         } catch (sErr) {
-          console.error("Failed to decrement store quota:", sErr?.message || sErr);
+          console.error(
+            "Failed to decrement store quota:",
+            sErr?.message || sErr,
+          );
         }
 
         await db.activityLog.create({
@@ -298,7 +338,10 @@ export const action = async ({ request }) => {
           },
         });
 
-        return { success: true, message: `Code ${discountCode.code} deleted successfully from Shopify & app.` };
+        return {
+          success: true,
+          message: `Code ${discountCode.code} deleted successfully from Shopify & app.`,
+        };
       }
     } catch (err) {
       console.error("Code deletion error:", err?.message || err);
@@ -307,7 +350,10 @@ export const action = async ({ request }) => {
   }
 
   // 3. DELETE ENTIRE CAMPAIGN (AND ALL ITS CODES)
-  if ((actionType === "DELETE" || actionType === "DELETE_CAMPAIGN") && campaignId) {
+  if (
+    (actionType === "DELETE" || actionType === "DELETE_CAMPAIGN") &&
+    campaignId
+  ) {
     try {
       const campaign = await db.campaign.findUnique({
         where: { id: campaignId },
@@ -331,22 +377,33 @@ export const action = async ({ request }) => {
                 variables: {
                   id: campaign.shopifyDiscountId,
                 },
-              }
+              },
             );
           } catch (shopErr) {
-            console.warn("Shopify GraphQL campaign deletion warning:", shopErr?.message || shopErr);
+            console.warn(
+              "Shopify GraphQL campaign deletion warning:",
+              shopErr?.message || shopErr,
+            );
           }
         }
 
         // Refund unused quota to store
         try {
-          const unusedCodes = Math.max(0, campaign.totalCodes - campaign.usedCodes);
-          const storeSetting = await db.storeSetting.findUnique({ where: { shop } });
+          const unusedCodes = Math.max(
+            0,
+            campaign.totalCodes - campaign.usedCodes,
+          );
+          const storeSetting = await db.storeSetting.findUnique({
+            where: { shop },
+          });
           if (storeSetting && storeSetting.codesGenerated > 0) {
             await db.storeSetting.update({
               where: { shop },
               data: {
-                codesGenerated: Math.max(0, storeSetting.codesGenerated - unusedCodes),
+                codesGenerated: Math.max(
+                  0,
+                  storeSetting.codesGenerated - unusedCodes,
+                ),
               },
             });
           }
@@ -367,7 +424,10 @@ export const action = async ({ request }) => {
           },
         });
 
-        return { success: true, message: `Campaign "${campaign.title}" deleted.` };
+        return {
+          success: true,
+          message: `Campaign "${campaign.title}" deleted.`,
+        };
       }
     } catch (err) {
       console.error("Campaign deletion error:", err?.message || err);
@@ -394,7 +454,8 @@ export default function CampaignsPage() {
   const filteredCampaigns = campaigns.filter((c) => {
     const matchesSearch =
       c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (c.codePrefix && c.codePrefix.toLowerCase().includes(searchTerm.toLowerCase()));
+      (c.codePrefix &&
+        c.codePrefix.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = statusFilter === "ALL" || c.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -405,37 +466,59 @@ export default function CampaignsPage() {
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const handleCopyAllCodes = (codesList) => {
+  const handleCopyAllCodes = (codesList, selectedIds = []) => {
     if (!codesList || codesList.length === 0) return;
-    const allCodesString = codesList.map((c) => c.code).join("\n");
+    let targetList = codesList;
+    if (selectedIds && selectedIds.length > 0) {
+      targetList = codesList.filter((c) => selectedIds.includes(c.id));
+    }
+    if (targetList.length === 0) return;
+    const allCodesString = targetList.map((c) => c.code).join("\n");
     navigator.clipboard.writeText(allCodesString);
     setCopiedAll(true);
     setTimeout(() => setCopiedAll(false), 2500);
   };
 
-  const handleExportCSV = (campaign) => {
-    if (!campaign.codes || campaign.codes.length === 0) return;
+  const handleExportCSV = (campaign, selectedIds = []) => {
+    if (!campaign || !campaign.codes || campaign.codes.length === 0) return;
+    let targetCodes = campaign.codes;
+    if (selectedIds && selectedIds.length > 0) {
+      targetCodes = campaign.codes.filter((c) => selectedIds.includes(c.id));
+    }
+    if (targetCodes.length === 0) return;
+
     const header = "Code,Usage Count,Max Uses,Created At\n";
-    const rows = campaign.codes
-      .map((c) => `"${c.code}",${c.usageCount},${c.maxUses},"${new Date(c.createdAt).toISOString()}"`)
+    const rows = targetCodes
+      .map(
+        (c) =>
+          `"${c.code}",${c.usageCount},${c.maxUses},"${new Date(c.createdAt).toISOString()}"`,
+      )
       .join("\n");
     const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `${campaign.title.replace(/\s+/g, "_")}_discount_codes.csv`);
+    const suffix =
+      selectedIds && selectedIds.length > 0
+        ? `_selected_${selectedIds.length}`
+        : "";
+    link.setAttribute(
+      "download",
+      `${campaign.title.replace(/\s+/g, "_")}${suffix}_discount_codes.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
   const selectedCampaignForModal = activeModalCampaign
-    ? campaigns.find((c) => c.id === activeModalCampaign.id) || activeModalCampaign
+    ? campaigns.find((c) => c.id === activeModalCampaign.id) ||
+      activeModalCampaign
     : null;
 
   const modalFilteredCodes = selectedCampaignForModal?.codes
     ? selectedCampaignForModal.codes.filter((c) =>
-        c.code.toLowerCase().includes(modalSearchTerm.toLowerCase())
+        c.code.toLowerCase().includes(modalSearchTerm.toLowerCase()),
       )
     : [];
 
@@ -448,7 +531,10 @@ export default function CampaignsPage() {
       const filteredIds = new Set(modalFilteredCodes.map((c) => c.id));
       setSelectedCodeIds(selectedCodeIds.filter((id) => !filteredIds.has(id)));
     } else {
-      const combined = new Set([...selectedCodeIds, ...modalFilteredCodes.map((c) => c.id)]);
+      const combined = new Set([
+        ...selectedCodeIds,
+        ...modalFilteredCodes.map((c) => c.id),
+      ]);
       setSelectedCodeIds(Array.from(combined));
     }
   };
@@ -469,11 +555,26 @@ export default function CampaignsPage() {
     <div className="bd-dashboard">
       <div className="bd-max-width">
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
           <div>
-            <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 700 }}>Discount Campaigns</h1>
-            <p style={{ margin: "4px 0 0 0", color: "#616161", fontSize: "14px" }}>
-              View, manage, export, and delete generated discount campaigns and individual codes.
+            <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 700 }}>
+              Discount Campaigns
+            </h1>
+            <p
+              style={{
+                margin: "4px 0 0 0",
+                color: "#616161",
+                fontSize: "14px",
+              }}
+            >
+              View, manage, export, and delete generated discount campaigns and
+              individual codes.
             </p>
           </div>
           <button
@@ -540,7 +641,12 @@ export default function CampaignsPage() {
           <div style={{ position: "relative", flex: 1, maxWidth: "350px" }}>
             <Search
               size={18}
-              style={{ position: "absolute", left: "12px", top: "10px", color: "#8c9196" }}
+              style={{
+                position: "absolute",
+                left: "12px",
+                top: "10px",
+                color: "#8c9196",
+              }}
             />
             <input
               type="text"
@@ -601,45 +707,88 @@ export default function CampaignsPage() {
               <tbody>
                 {filteredCampaigns.length === 0 ? (
                   <tr>
-                    <td colSpan={11} style={{ textAlign: "center", padding: "40px", color: "#616161" }}>
-                      No campaigns found. Click <strong>"Create Bulk Discount"</strong> to generate your first batch!
+                    <td
+                      colSpan={11}
+                      style={{
+                        textAlign: "center",
+                        padding: "40px",
+                        color: "#616161",
+                      }}
+                    >
+                      No campaigns found. Click{" "}
+                      <strong>"Create Bulk Discount"</strong> to generate your
+                      first batch!
                     </td>
                   </tr>
                 ) : (
                   filteredCampaigns.map((c) => {
                     const totalCount = c.totalCodes;
-                    const activeCount = c.codes ? c.codes.length : Math.max(0, c.totalCodes - (c.deletedCodes || 0));
-                    const usedCount = c.codes ? c.codes.filter((cd) => cd.usageCount > 0).length : c.usedCodes;
+                    const activeCount =
+                      c._count?.codes !== undefined
+                        ? c._count.codes
+                        : Math.max(0, c.totalCodes - (c.deletedCodes || 0));
+                    const usedCount =
+                      c.usedCodes ||
+                      (c.codes
+                        ? c.codes.filter((cd) => cd.usageCount > 0).length
+                        : 0);
                     const deletedCount =
                       c.deletedCodes !== undefined && c.deletedCodes !== null
                         ? c.deletedCodes
                         : Math.max(0, totalCount - activeCount);
-                    const usagePct = activeCount > 0 ? ((usedCount / activeCount) * 100).toFixed(1) : 0;
+                    const usagePct =
+                      activeCount > 0
+                        ? ((usedCount / activeCount) * 100).toFixed(1)
+                        : 0;
 
                     return (
                       <tr key={c.id}>
                         <td>
-                          <div className="bd-campaign-name" style={{ fontWeight: 600, color: "#1a1a1a" }}>{c.title}</div>
-                          <div className="bd-campaign-sub" style={{ fontSize: "12px", color: "#616161" }}>
+                          <div
+                            className="bd-campaign-name"
+                            style={{ fontWeight: 600, color: "#1a1a1a" }}
+                          >
+                            {c.title}
+                          </div>
+                          <div
+                            className="bd-campaign-sub"
+                            style={{ fontSize: "12px", color: "#616161" }}
+                          >
                             {c.minRequirementType === "NONE"
                               ? "No min requirement"
                               : c.minRequirementType === "MIN_AMOUNT"
-                              ? `Min spend ${formatCurrency(c.minRequirementValue, currencyCode)}`
-                              : `Min qty ${c.minRequirementValue}`}
+                                ? `Min spend ${formatCurrency(c.minRequirementValue, currencyCode)}`
+                                : `Min qty ${c.minRequirementValue}`}
                           </div>
                         </td>
                         <td>
-                          <code style={{ background: "#f1f2f4", padding: "3px 8px", borderRadius: "4px", fontSize: "12px" }}>
+                          <code
+                            style={{
+                              background: "#f1f2f4",
+                              padding: "3px 8px",
+                              borderRadius: "4px",
+                              fontSize: "12px",
+                            }}
+                          >
                             {c.codePrefix ? `${c.codePrefix}*` : "CUSTOM"}
                           </code>
                         </td>
-                        <td><strong>{totalCount.toLocaleString()}</strong></td>
                         <td>
-                          <span style={{ fontWeight: 600, color: "#166534" }}>{activeCount.toLocaleString()}</span>
+                          <strong>{totalCount.toLocaleString()}</strong>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 600, color: "#166534" }}>
+                            {activeCount.toLocaleString()}
+                          </span>
                         </td>
                         <td>{usedCount.toLocaleString()}</td>
                         <td>
-                          <span style={{ color: deletedCount > 0 ? "#dc2626" : "#6b7280", fontWeight: deletedCount > 0 ? 600 : 400 }}>
+                          <span
+                            style={{
+                              color: deletedCount > 0 ? "#dc2626" : "#6b7280",
+                              fontWeight: deletedCount > 0 ? 600 : 400,
+                            }}
+                          >
                             {deletedCount.toLocaleString()}
                           </span>
                         </td>
@@ -659,20 +808,28 @@ export default function CampaignsPage() {
                             {c.discountType === "BUY_X_GET_Y"
                               ? `BUY ${c.buysQuantity || 1} GET ${c.getsQuantity || 1} ${c.getsDiscountType === "PERCENTAGE" ? `${c.getsDiscountValue}% OFF` : "FREE"}`
                               : c.discountType === "FREE_SHIPPING"
-                              ? "FREE SHIPPING"
-                              : c.discountType === "PERCENTAGE"
-                              ? `${c.discountValue}% OFF`
-                              : `${formatCurrency(c.discountValue, currencyCode)} OFF`}
+                                ? "FREE SHIPPING"
+                                : c.discountType === "PERCENTAGE"
+                                  ? `${c.discountValue}% OFF`
+                                  : `${formatCurrency(c.discountValue, currencyCode)} OFF`}
                           </span>
                         </td>
                         <td>
-                          <span className={`bd-status-badge ${c.status.toLowerCase()}`}>
+                          <span
+                            className={`bd-status-badge ${c.status.toLowerCase()}`}
+                          >
                             {c.status}
                           </span>
                         </td>
                         <td>{new Date(c.createdAt).toLocaleDateString()}</td>
                         <td style={{ textAlign: "right" }}>
-                          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                          <div
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: "6px",
+                            }}
+                          >
                             {/* View Codes Button */}
                             <button
                               type="button"
@@ -712,9 +869,20 @@ export default function CampaignsPage() {
                             </button>
 
                             {/* Delete Campaign Button */}
-                            <fetcher.Form method="POST" style={{ display: "inline" }}>
-                              <input type="hidden" name="campaignId" value={c.id} />
-                              <input type="hidden" name="actionType" value="DELETE_CAMPAIGN" />
+                            <fetcher.Form
+                              method="POST"
+                              style={{ display: "inline" }}
+                            >
+                              <input
+                                type="hidden"
+                                name="campaignId"
+                                value={c.id}
+                              />
+                              <input
+                                type="hidden"
+                                name="actionType"
+                                value="DELETE_CAMPAIGN"
+                              />
                               <button
                                 type="submit"
                                 className="bd-action-icon-btn"
@@ -730,7 +898,7 @@ export default function CampaignsPage() {
                                 onClick={(e) => {
                                   if (
                                     !confirm(
-                                      `Are you sure you want to delete campaign "${c.title}" and its ${c.totalCodes} discount codes from Shopify? This action cannot be undone.`
+                                      `Are you sure you want to delete campaign "${c.title}" and its ${c.totalCodes} discount codes from Shopify? This action cannot be undone.`,
                                     )
                                   ) {
                                     e.preventDefault();
@@ -778,7 +946,8 @@ export default function CampaignsPage() {
               maxHeight: "88vh",
               display: "flex",
               flexDirection: "column",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+              boxShadow:
+                "0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
               overflow: "hidden",
             }}
           >
@@ -793,13 +962,53 @@ export default function CampaignsPage() {
               }}
             >
               <div>
-                <h3 style={{ margin: 0, fontSize: "18px", fontWeight: 700, color: "#111827", display: "flex", alignItems: "center", gap: "8px" }}>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontSize: "18px",
+                    fontWeight: 700,
+                    color: "#111827",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
                   <Tag size={18} color="#166534" />
-                  {selectedCampaignForModal.title} &mdash; Codes ({selectedCampaignForModal.codes?.length || 0})
+                  {selectedCampaignForModal.title} &mdash; Codes (
+                  {selectedCampaignForModal.codes?.length || 0})
                 </h3>
-                <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: "#6b7280" }}>
-                  Total Generated: <strong>{selectedCampaignForModal.totalCodes}</strong> &bull; Active: <strong style={{ color: "#166534" }}>{selectedCampaignForModal.codes?.length || 0}</strong> &bull; Deleted: <strong style={{ color: "#dc2626" }}>{selectedCampaignForModal.deletedCodes || Math.max(0, selectedCampaignForModal.totalCodes - (selectedCampaignForModal.codes?.length || 0))}</strong>
-                </p>
+                {(() => {
+                  const mActive =
+                    selectedCampaignForModal._count?.codes !== undefined
+                      ? selectedCampaignForModal._count.codes
+                      : selectedCampaignForModal.codes?.length || 0;
+                  const mDeleted = Math.max(
+                    0,
+                    selectedCampaignForModal.totalCodes - mActive,
+                  );
+                  return (
+                    <p
+                      style={{
+                        margin: "4px 0 0 0",
+                        fontSize: "13px",
+                        color: "#6b7280",
+                      }}
+                    >
+                      Total Generated:{" "}
+                      <strong>
+                        {selectedCampaignForModal.totalCodes?.toLocaleString()}
+                      </strong>{" "}
+                      &bull; Active:{" "}
+                      <strong style={{ color: "#166534" }}>
+                        {mActive.toLocaleString()}
+                      </strong>{" "}
+                      &bull; Deleted:{" "}
+                      <strong style={{ color: "#dc2626" }}>
+                        {mDeleted.toLocaleString()}
+                      </strong>
+                    </p>
+                  );
+                })()}
               </div>
               <button
                 type="button"
@@ -833,7 +1042,15 @@ export default function CampaignsPage() {
             >
               {/* Search specific code */}
               <div style={{ position: "relative", flex: 1 }}>
-                <Search size={16} style={{ position: "absolute", left: "10px", top: "9px", color: "#9ca3af" }} />
+                <Search
+                  size={16}
+                  style={{
+                    position: "absolute",
+                    left: "10px",
+                    top: "9px",
+                    color: "#9ca3af",
+                  }}
+                />
                 <input
                   type="text"
                   placeholder="Search code (e.g. DIWALI-)..."
@@ -851,13 +1068,21 @@ export default function CampaignsPage() {
               </div>
 
               {/* Action Buttons: Copy All, Export CSV */}
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                {/* Copy All Codes Button */}
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
+                {/* Copy Codes Button */}
                 <button
                   type="button"
-                  onClick={() => handleCopyAllCodes(modalFilteredCodes)}
+                  onClick={() =>
+                    handleCopyAllCodes(modalFilteredCodes, selectedCodeIds)
+                  }
                   className="bd-btn-secondary"
-                  title="Copy all visible codes"
+                  title={
+                    selectedCodeIds.length > 0
+                      ? `Copy ${selectedCodeIds.length} selected codes`
+                      : "Copy all visible codes"
+                  }
                   style={{
                     fontSize: "12px",
                     padding: "6px 12px",
@@ -867,17 +1092,28 @@ export default function CampaignsPage() {
                   }}
                 >
                   {copiedAll ? <Check size={14} /> : <CopyCheck size={14} />}
-                  <span>{copiedAll ? "All Copied!" : "Copy All"}</span>
+                  <span>
+                    {copiedAll
+                      ? "Copied!"
+                      : selectedCodeIds.length > 0
+                        ? `Copy Selected (${selectedCodeIds.length})`
+                        : "Copy All"}
+                  </span>
                 </button>
 
                 {/* Export CSV Button */}
                 <button
                   type="button"
-                  onClick={() => handleExportCSV(selectedCampaignForModal)}
+                  onClick={() =>
+                    handleExportCSV(selectedCampaignForModal, selectedCodeIds)
+                  }
                   className="bd-btn-secondary"
                   style={{ fontSize: "12px", padding: "6px 12px" }}
                 >
-                  <Download size={14} /> Export CSV
+                  <Download size={14} />{" "}
+                  {selectedCodeIds.length > 0
+                    ? `Export Selected (${selectedCodeIds.length})`
+                    : "Export CSV"}
                 </button>
               </div>
             </div>
@@ -894,7 +1130,9 @@ export default function CampaignsPage() {
                 fontSize: "13px",
               }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "8px" }}
+              >
                 <button
                   type="button"
                   onClick={toggleSelectAllModalCodes}
@@ -916,67 +1154,101 @@ export default function CampaignsPage() {
                   ) : (
                     <Square size={16} color="#9ca3af" />
                   )}
-                  <span>
-                    Select All ({modalFilteredCodes.length})
-                  </span>
+                  <span>Select All ({modalFilteredCodes.length})</span>
                 </button>
                 {selectedCodeIds.length > 0 && (
-                  <span style={{ color: "#2563eb", fontWeight: 600, marginLeft: "8px" }}>
+                  <span
+                    style={{
+                      color: "#2563eb",
+                      fontWeight: 600,
+                      marginLeft: "8px",
+                    }}
+                  >
                     &bull; {selectedCodeIds.length} selected
                   </span>
                 )}
               </div>
 
               {selectedCodeIds.length > 0 && (
-                <fetcher.Form
-                  method="POST"
-                  onSubmit={(e) => {
-                    if (
-                      !confirm(
-                        `Are you sure you want to delete ${selectedCodeIds.length} selected discount codes from Shopify & the app?`
-                      )
-                    ) {
-                      e.preventDefault();
-                    }
-                  }}
+                <div
+                  style={{ display: "flex", alignItems: "center", gap: "8px" }}
                 >
-                  <input type="hidden" name="actionType" value="DELETE_MULTIPLE_CODES" />
-                  <input type="hidden" name="campaignId" value={selectedCampaignForModal.id} />
-                  <input type="hidden" name="codeIds" value={JSON.stringify(selectedCodeIds)} />
-                  <button
-                    type="submit"
-                    disabled={isDeletingBatch}
-                    style={{
-                      background: "#dc2626",
-                      color: "#ffffff",
-                      border: "none",
-                      padding: "6px 14px",
-                      borderRadius: "6px",
-                      fontSize: "12px",
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
+                  <fetcher.Form
+                    method="POST"
+                    onSubmit={(e) => {
+                      if (
+                        !confirm(
+                          `Are you sure you want to delete ${selectedCodeIds.length} selected discount codes from Shopify & the app?`,
+                        )
+                      ) {
+                        e.preventDefault();
+                      }
                     }}
                   >
-                    <Trash2 size={14} />
-                    {isDeletingBatch
-                      ? "Deleting..."
-                      : `Delete Selected (${selectedCodeIds.length})`}
-                  </button>
-                </fetcher.Form>
+                    <input
+                      type="hidden"
+                      name="actionType"
+                      value="DELETE_MULTIPLE_CODES"
+                    />
+                    <input
+                      type="hidden"
+                      name="campaignId"
+                      value={selectedCampaignForModal.id}
+                    />
+                    <input
+                      type="hidden"
+                      name="codeIds"
+                      value={JSON.stringify(selectedCodeIds)}
+                    />
+                    <button
+                      type="submit"
+                      disabled={isDeletingBatch}
+                      style={{
+                        background: "#dc2626",
+                        color: "#ffffff",
+                        border: "none",
+                        padding: "6px 14px",
+                        borderRadius: "6px",
+                        fontSize: "12px",
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      {isDeletingBatch
+                        ? "Deleting..."
+                        : `Delete Selected (${selectedCodeIds.length})`}
+                    </button>
+                  </fetcher.Form>
+                </div>
               )}
             </div>
 
             {/* Codes List Table/Grid */}
             <div style={{ padding: "16px 24px", overflowY: "auto", flex: 1 }}>
               {modalFilteredCodes.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px", color: "#6b7280" }}>
-                  {modalSearchTerm ? "No discount codes match your search query." : "No codes available in this campaign."}
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "40px",
+                    color: "#6b7280",
+                  }}
+                >
+                  {modalSearchTerm
+                    ? "No discount codes match your search query."
+                    : "No codes available in this campaign."}
                 </div>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
                   {modalFilteredCodes.map((codeItem) => {
                     const isSelected = selectedCodeIds.includes(codeItem.id);
                     return (
@@ -989,11 +1261,19 @@ export default function CampaignsPage() {
                           padding: "10px 14px",
                           background: isSelected ? "#f0fdf4" : "#f9fafb",
                           borderRadius: "8px",
-                          border: isSelected ? "1px solid #86efac" : "1px solid #e5e7eb",
+                          border: isSelected
+                            ? "1px solid #86efac"
+                            : "1px solid #e5e7eb",
                           transition: "all 0.15s ease",
                         }}
                       >
-                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "12px",
+                          }}
+                        >
                           {/* Selection Checkbox */}
                           <input
                             type="checkbox"
@@ -1008,7 +1288,14 @@ export default function CampaignsPage() {
                           />
 
                           {/* Code String */}
-                          <code style={{ fontSize: "14px", fontWeight: 700, color: "#166534", letterSpacing: "0.5px" }}>
+                          <code
+                            style={{
+                              fontSize: "14px",
+                              fontWeight: 700,
+                              color: "#166534",
+                              letterSpacing: "0.5px",
+                            }}
+                          >
                             {codeItem.code}
                           </code>
 
@@ -1018,14 +1305,23 @@ export default function CampaignsPage() {
                           </span>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
                           {/* Copy Code */}
                           <button
                             type="button"
                             onClick={() => handleCopy(codeItem.code)}
                             title="Copy Code"
                             style={{
-                              background: copiedCode === codeItem.code ? "#dcfce7" : "#ffffff",
+                              background:
+                                copiedCode === codeItem.code
+                                  ? "#dcfce7"
+                                  : "#ffffff",
                               border: "1px solid #d1d5db",
                               borderRadius: "6px",
                               padding: "6px 10px",
@@ -1034,18 +1330,40 @@ export default function CampaignsPage() {
                               alignItems: "center",
                               gap: "4px",
                               cursor: "pointer",
-                              color: copiedCode === codeItem.code ? "#166534" : "#374151",
+                              color:
+                                copiedCode === codeItem.code
+                                  ? "#166534"
+                                  : "#374151",
                             }}
                           >
-                            {copiedCode === codeItem.code ? <Check size={14} /> : <Copy size={14} />}
+                            {copiedCode === codeItem.code ? (
+                              <Check size={14} />
+                            ) : (
+                              <Copy size={14} />
+                            )}
                             {copiedCode === codeItem.code ? "Copied" : "Copy"}
                           </button>
 
                           {/* Delete Single Code */}
-                          <fetcher.Form method="POST" style={{ display: "inline" }}>
-                            <input type="hidden" name="actionType" value="DELETE_CODE" />
-                            <input type="hidden" name="campaignId" value={selectedCampaignForModal.id} />
-                            <input type="hidden" name="codeId" value={codeItem.id} />
+                          <fetcher.Form
+                            method="POST"
+                            style={{ display: "inline" }}
+                          >
+                            <input
+                              type="hidden"
+                              name="actionType"
+                              value="DELETE_CODE"
+                            />
+                            <input
+                              type="hidden"
+                              name="campaignId"
+                              value={selectedCampaignForModal.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="codeId"
+                              value={codeItem.id}
+                            />
                             <button
                               type="submit"
                               title="Delete this code from Shopify & App"
@@ -1062,7 +1380,11 @@ export default function CampaignsPage() {
                                 cursor: "pointer",
                               }}
                               onClick={(e) => {
-                                if (!confirm(`Are you sure you want to delete discount code "${codeItem.code}"?`)) {
+                                if (
+                                  !confirm(
+                                    `Are you sure you want to delete discount code "${codeItem.code}"?`,
+                                  )
+                                ) {
                                   e.preventDefault();
                                 }
                               }}
@@ -1089,7 +1411,9 @@ export default function CampaignsPage() {
               }}
             >
               <div style={{ fontSize: "13px", color: "#6b7280" }}>
-                Showing <strong>{modalFilteredCodes.length}</strong> of <strong>{selectedCampaignForModal.codes?.length || 0}</strong> codes
+                Showing <strong>{modalFilteredCodes.length}</strong> of{" "}
+                <strong>{selectedCampaignForModal.codes?.length || 0}</strong>{" "}
+                codes
               </div>
               <button
                 type="button"

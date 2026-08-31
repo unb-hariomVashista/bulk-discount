@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 export const loader = async ({ request }) => {
-  const { session } = await authenticate.admin(request);
+  const { session, admin } = await authenticate.admin(request);
   const shop = session.shop;
 
   let storeSetting = null;
@@ -56,28 +56,78 @@ export const loader = async ({ request }) => {
 
   const url = new URL(request.url);
   const purchasedPackKey = url.searchParams.get("purchasedPack");
+  const chargeId = url.searchParams.get("charge_id");
   let justPurchasedPack = null;
 
   if (purchasedPackKey && PAYG_PACKS[purchasedPackKey]) {
     const pack = PAYG_PACKS[purchasedPackKey];
-    justPurchasedPack = pack;
-    try {
-      storeSetting = await db.storeSetting.update({
-        where: { shop },
-        data: {
-          codesLimit: { increment: pack.limitAdd },
-        },
-      });
 
-      await db.activityLog.create({
-        data: {
-          shop,
-          action: "CREDITS_PURCHASED",
-          description: `Purchased top-up pack ${pack.name} (+${pack.limitAdd.toLocaleString()} codes for ${pack.price}).`,
-        },
-      });
-    } catch (err) {
-      console.error("[Bulk Discount] Failed to record purchase:", err);
+    if (chargeId) {
+      const fullChargeId = chargeId.startsWith("gid://")
+        ? chargeId
+        : `gid://shopify/AppPurchaseOneTime/${chargeId}`;
+
+      try {
+        const existingLog = await db.activityLog.findFirst({
+          where: {
+            shop,
+            action: "CREDITS_PURCHASED",
+            details: fullChargeId,
+          },
+        });
+
+        if (!existingLog) {
+          let isPaymentVerified = true;
+          if (admin && admin.graphql) {
+            try {
+              const response = await admin.graphql(
+                `#graphql
+                query checkAppPurchase($id: ID!) {
+                  node(id: $id) {
+                    ... on AppPurchaseOneTime {
+                      id
+                      status
+                    }
+                  }
+                }`,
+                { variables: { id: fullChargeId } },
+              );
+              const resJson = await response.json();
+              const status = resJson?.data?.node?.status;
+              if (status && status !== "ACTIVE" && status !== "ACCEPTED") {
+                isPaymentVerified = false;
+              }
+            } catch (graphqlErr) {
+              console.warn(
+                "[Bulk Discount] GraphQL charge check warning:",
+                graphqlErr?.message || graphqlErr,
+              );
+            }
+          }
+
+          if (isPaymentVerified) {
+            storeSetting = await db.storeSetting.update({
+              where: { shop },
+              data: {
+                codesLimit: { increment: pack.limitAdd },
+              },
+            });
+
+            await db.activityLog.create({
+              data: {
+                shop,
+                action: "CREDITS_PURCHASED",
+                description: `Purchased top-up pack ${pack.name} (+${pack.limitAdd.toLocaleString()} codes for ${pack.price}).`,
+                details: fullChargeId,
+              },
+            });
+
+            justPurchasedPack = pack;
+          }
+        }
+      } catch (err) {
+        console.error("[Bulk Discount] Failed to record purchase:", err);
+      }
     }
   }
 
@@ -134,6 +184,7 @@ export const action = async ({ request }) => {
           shop,
           action: "CREDITS_PURCHASED",
           description: `Added top-up pack ${pack.name} (+${pack.limitAdd.toLocaleString()} codes for ${pack.price}) [Dev Mode].`,
+          details: `DEV_MODE_${Date.now()}`,
         },
       });
 

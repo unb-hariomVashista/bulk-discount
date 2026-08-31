@@ -23,24 +23,40 @@ export const loader = async ({ request }) => {
   const shop = session.shop;
 
   // Run independent database and network queries in parallel
-  const [shopJsonRes, storeDbSetting, dbTotalCampaigns, dbActiveCampaigns, dbRecentCampaigns] = await Promise.all([
-    admin.graphql(
-      `#graphql
+  const [
+    shopJsonRes,
+    storeDbSetting,
+    dbTotalCampaigns,
+    dbActiveCampaigns,
+    dbRecentCampaigns,
+  ] = await Promise.all([
+    admin
+      .graphql(
+        `#graphql
       query getShopCurrency {
         shop {
           currencyCode
         }
-      }`
-    ).then(res => res.json()).catch(() => null),
+      }`,
+      )
+      .then((res) => res.json())
+      .catch(() => null),
     db.storeSetting ? db.storeSetting.findUnique({ where: { shop } }) : null,
     db.campaign ? db.campaign.count({ where: { shop } }) : Promise.resolve(0),
-    db.campaign ? db.campaign.count({ where: { shop, status: "ACTIVE" } }) : Promise.resolve(0),
-    db.campaign ? db.campaign.findMany({
-      where: { shop },
-      orderBy: { createdAt: "desc" },
-      include: { codes: { take: 5 } }, // Fetch minimal codes to save query speed
-      take: 5,
-    }) : Promise.resolve([]),
+    db.campaign
+      ? db.campaign.count({ where: { shop, status: "ACTIVE" } })
+      : Promise.resolve(0),
+    db.campaign
+      ? db.campaign.findMany({
+          where: { shop },
+          orderBy: { createdAt: "desc" },
+          include: {
+            _count: { select: { codes: true } },
+            codes: { take: 5 },
+          },
+          take: 5,
+        })
+      : Promise.resolve([]),
   ]);
 
   const currencyCode = shopJsonRes?.data?.shop?.currencyCode || "USD";
@@ -49,7 +65,12 @@ export const loader = async ({ request }) => {
   try {
     if (db.storeSetting && !storeSetting) {
       storeSetting = await db.storeSetting.create({
-        data: { shop, plan: "PAY_AS_YOU_GO", codesLimit: 250, codesGenerated: 0 },
+        data: {
+          shop,
+          plan: "PAY_AS_YOU_GO",
+          codesLimit: 250,
+          codesGenerated: 0,
+        },
       });
     }
   } catch (e) {
@@ -57,7 +78,11 @@ export const loader = async ({ request }) => {
   }
 
   if (!storeSetting) {
-    storeSetting = { plan: "PAY_AS_YOU_GO", codesLimit: 250, codesGenerated: 0 };
+    storeSetting = {
+      plan: "PAY_AS_YOU_GO",
+      codesLimit: 250,
+      codesGenerated: 0,
+    };
   }
 
   // Non-blocking background sync of the campaign usage statistics
@@ -75,8 +100,14 @@ export const loader = async ({ request }) => {
       where: { shop },
       select: { totalCodes: true, usedCodes: true },
     });
-    totalCodesCreated = allCampaigns.reduce((acc, c) => acc + (c.totalCodes || 0), 0);
-    totalCodesUsed = allCampaigns.reduce((acc, c) => acc + (c.usedCodes || 0), 0);
+    totalCodesCreated = allCampaigns.reduce(
+      (acc, c) => acc + (c.totalCodes || 0),
+      0,
+    );
+    totalCodesUsed = allCampaigns.reduce(
+      (acc, c) => acc + (c.usedCodes || 0),
+      0,
+    );
   }
 
   return {
@@ -105,13 +136,24 @@ export default function Index() {
 
   const usagePctOfLimit =
     storeSetting.codesLimit > 0
-      ? Math.min(100, ((storeSetting.codesGenerated / storeSetting.codesLimit) * 100).toFixed(1))
+      ? Math.min(
+          100,
+          (
+            (storeSetting.codesGenerated / storeSetting.codesLimit) *
+            100
+          ).toFixed(1),
+        )
       : 0;
 
   const usagePctOfCreated =
     totalCodesCreated > 0
       ? ((totalCodesUsed / totalCodesCreated) * 100).toFixed(1)
       : "0.0";
+
+  const remainingCodes = Math.max(
+    0,
+    storeSetting.codesLimit - storeSetting.codesGenerated,
+  );
 
   return (
     <div className="bd-dashboard">
@@ -129,18 +171,43 @@ export default function Index() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-            <div style={{ background: "#e6f4ea", color: "#137333", padding: "10px", borderRadius: "10px" }}>
+            <div
+              style={{
+                background: "#e6f4ea",
+                color: "#137333",
+                padding: "10px",
+                borderRadius: "10px",
+              }}
+            >
               <Zap size={22} />
             </div>
             <div>
-              <div style={{ fontSize: "14px", fontWeight: 700, color: "#1a1a1a" }}>
-                Active Model: <span style={{ color: "#15803d" }}>PAY AS YOU GO</span>
-                <span style={{ marginLeft: "10px", fontSize: "12px", background: "#dcfce7", color: "#15803d", padding: "2px 8px", borderRadius: "10px" }}>
+              <div
+                style={{ fontSize: "14px", fontWeight: 700, color: "#1a1a1a" }}
+              >
+                Active Model:{" "}
+                <span style={{ color: "#15803d" }}>PAY AS YOU GO</span>
+                <span
+                  style={{
+                    marginLeft: "10px",
+                    fontSize: "12px",
+                    background: "#dcfce7",
+                    color: "#15803d",
+                    padding: "2px 8px",
+                    borderRadius: "10px",
+                  }}
+                >
                   Limit: {storeSetting.codesLimit.toLocaleString()} codes
                 </span>
               </div>
-              <div style={{ fontSize: "13px", color: "#616161", marginTop: "2px" }}>
-                Generated <strong>{storeSetting.codesGenerated.toLocaleString()}</strong> of {storeSetting.codesLimit.toLocaleString()} codes ({usagePctOfLimit}% used)
+              <div
+                style={{ fontSize: "13px", color: "#616161", marginTop: "2px" }}
+              >
+                Generated{" "}
+                <strong>{storeSetting.codesGenerated.toLocaleString()}</strong>{" "}
+                of {storeSetting.codesLimit.toLocaleString()} codes (
+                {usagePctOfLimit}% used) •{" "}
+                <strong>{remainingCodes.toLocaleString()}</strong> remaining
               </div>
             </div>
           </div>
@@ -164,7 +231,8 @@ export default function Index() {
               <div className="bd-app-titles">
                 <h1>Bulk Discount Codes</h1>
                 <p>
-                  Autogenerate thousands of unique discount codes for your store in seconds.
+                  Autogenerate thousands of unique discount codes for your store
+                  in seconds.
                 </p>
               </div>
             </div>
@@ -241,7 +309,10 @@ export default function Index() {
                   {totalCodesCreated.toLocaleString()}
                 </span>
               </div>
-              <div className="bd-metric-subtext">Quota: {storeSetting.codesLimit.toLocaleString()}</div>
+              <div className="bd-metric-subtext">
+                Remaining: {remainingCodes.toLocaleString()} /{" "}
+                {storeSetting.codesLimit.toLocaleString()}
+              </div>
             </div>
           </div>
 
@@ -298,19 +369,49 @@ export default function Index() {
 
           {recentCampaigns.length === 0 ? (
             <div style={{ textAlign: "center", padding: "48px 20px" }}>
-              <div style={{ background: "#f0fdf4", color: "#166534", width: "48px", height: "48px", borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: "12px" }}>
+              <div
+                style={{
+                  background: "#f0fdf4",
+                  color: "#166534",
+                  width: "48px",
+                  height: "48px",
+                  borderRadius: "50%",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: "12px",
+                }}
+              >
                 <Tag size={24} />
               </div>
-              <h3 style={{ margin: "0 0 6px 0", fontSize: "16px", fontWeight: 700, color: "#1a1a1a" }}>
+              <h3
+                style={{
+                  margin: "0 0 6px 0",
+                  fontSize: "16px",
+                  fontWeight: 700,
+                  color: "#1a1a1a",
+                }}
+              >
                 No campaigns created yet
               </h3>
-              <p style={{ margin: "0 0 16px 0", fontSize: "13px", color: "#616161" }}>
-                Create your first bulk discount campaign to generate unique codes for your store.
+              <p
+                style={{
+                  margin: "0 0 16px 0",
+                  fontSize: "13px",
+                  color: "#616161",
+                }}
+              >
+                Create your first bulk discount campaign to generate unique
+                codes for your store.
               </p>
               <button
                 className="bd-btn-primary"
                 onClick={() => navigate("/app/create-codes")}
-                style={{ background: "#166534", fontSize: "13px", padding: "8px 16px" }}
+                style={{
+                  background: "#166534",
+                  fontSize: "13px",
+                  padding: "8px 16px",
+                }}
               >
                 <Plus size={16} />
                 Create Your First Campaign
@@ -326,29 +427,40 @@ export default function Index() {
                     <th>Active</th>
                     <th>Used</th>
                     <th>Deleted</th>
-                    <th>Usage</th>
+                    <th>Usage %</th>
                     <th>Status</th>
-                    <th>Created on</th>
+                    <th>Created</th>
                     <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {recentCampaigns.map((c) => {
                     const totalCount = c.totalCodes;
-                    const activeCount = c.codes ? c.codes.length : Math.max(0, c.totalCodes - (c.deletedCodes || 0));
-                    const usedCount = c.codes ? c.codes.filter((cd) => cd.usageCount > 0).length : c.usedCodes;
+                    const activeCount =
+                      c._count?.codes !== undefined
+                        ? c._count.codes
+                        : Math.max(0, c.totalCodes - (c.deletedCodes || 0));
+                    const usedCount =
+                      c.usedCodes ||
+                      (c.codes ? c.codes.filter((cd) => cd.usageCount > 0).length : 0);
                     const deletedCount =
                       c.deletedCodes !== undefined && c.deletedCodes !== null
                         ? c.deletedCodes
                         : Math.max(0, totalCount - activeCount);
-                    const usagePct = activeCount > 0 ? parseFloat(((usedCount / activeCount) * 100).toFixed(1)) : 0;
-                    const discountSub = c.discountType === "BUY_X_GET_Y"
-                      ? `Buy ${c.buysQuantity} Get ${c.getsQuantity}`
-                      : c.discountType === "FREE_SHIPPING"
-                      ? "Free Shipping"
-                      : c.discountType === "PERCENTAGE"
-                      ? `${c.discountValue}% OFF`
-                      : `${formatCurrency(c.discountValue, currencyCode)} OFF`;
+                    const usagePct =
+                      activeCount > 0
+                        ? parseFloat(
+                            ((usedCount / activeCount) * 100).toFixed(1),
+                          )
+                        : 0;
+                    const discountSub =
+                      c.discountType === "BUY_X_GET_Y"
+                        ? `Buy ${c.buysQuantity} Get ${c.getsQuantity}`
+                        : c.discountType === "FREE_SHIPPING"
+                          ? "Free Shipping"
+                          : c.discountType === "PERCENTAGE"
+                            ? `${c.discountValue}% OFF`
+                            : `${formatCurrency(c.discountValue, currencyCode)} OFF`;
 
                     return (
                       <tr key={c.id}>
@@ -358,13 +470,22 @@ export default function Index() {
                             {discountSub} • Prefix: {c.codePrefix || "CUSTOM"}
                           </div>
                         </td>
-                        <td><strong>{totalCount.toLocaleString()}</strong></td>
                         <td>
-                          <span style={{ fontWeight: 600, color: "#166534" }}>{activeCount.toLocaleString()}</span>
+                          <strong>{totalCount.toLocaleString()}</strong>
+                        </td>
+                        <td>
+                          <span style={{ fontWeight: 600, color: "#166534" }}>
+                            {activeCount.toLocaleString()}
+                          </span>
                         </td>
                         <td>{usedCount.toLocaleString()}</td>
                         <td>
-                          <span style={{ color: deletedCount > 0 ? "#dc2626" : "#6b7280", fontWeight: deletedCount > 0 ? 600 : 400 }}>
+                          <span
+                            style={{
+                              color: deletedCount > 0 ? "#dc2626" : "#6b7280",
+                              fontWeight: deletedCount > 0 ? 600 : 400,
+                            }}
+                          >
                             {deletedCount.toLocaleString()}
                           </span>
                         </td>
@@ -376,13 +497,13 @@ export default function Index() {
                                 style={{ width: `${Math.min(100, usagePct)}%` }}
                               />
                             </div>
-                            <span className="bd-usage-text">
-                              {usagePct}%
-                            </span>
+                            <span className="bd-usage-text">{usagePct}%</span>
                           </div>
                         </td>
                         <td>
-                          <span className={`bd-status-badge ${c.status.toLowerCase()}`}>
+                          <span
+                            className={`bd-status-badge ${c.status.toLowerCase()}`}
+                          >
                             {c.status}
                           </span>
                         </td>
@@ -406,7 +527,10 @@ export default function Index() {
         </div>
 
         {/* Bottom Quick Action Cards */}
-        <div className="bd-actions-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+        <div
+          className="bd-actions-grid"
+          style={{ gridTemplateColumns: "1fr 1fr" }}
+        >
           {/* Action 1 */}
           <div
             className="bd-quick-card"
