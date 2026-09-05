@@ -2,7 +2,7 @@
 
 client_id = "a0a7e61703b79eb05294cc06fd46ff43"
 name = "Bulk Discount Codes"
-application_url = "https://example.com"
+application_url = "https://discount-guru.unbundl.com"
 embedded = true
 
 [webhooks]
@@ -21,7 +21,7 @@ api_version = "2026-10"
 scopes = "write_products,write_metaobjects,write_metaobject_definitions,write_discounts,read_discounts"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://discount-guru.unbundl.com/api/auth" ]
 
 [build]
 automatically_update_urls_on_dev = true
