@@ -35,7 +35,7 @@ export default function App() {
   return (
     <div className={styles.index}>
       <div className={styles.content}>
-        <h1 className={styles.heading}>Bulk Discount Codes</h1>
+        <h1 className={styles.heading}>Discount Guru-Discount Manager</h1>
         <p className={styles.text}>
           Create, manage and export thousands of unique discount codes for your store in seconds.
         </p>

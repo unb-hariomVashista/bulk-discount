@@ -229,7 +229,7 @@ export default function Index() {
                 <Tag size={24} />
               </div>
               <div className="bd-app-titles">
-                <h1>Bulk Discount Codes</h1>
+                <h1>Discount Guru-Discount Manager</h1>
                 <p>
                   Autogenerate thousands of unique discount codes for your store
                   in seconds.
